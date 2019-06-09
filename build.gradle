@@ -1,0 +1,72 @@
+plugins {
+    id 'org.springframework.boot' version '2.1.5.RELEASE'
+    id 'java'
+    id 'org.hidetake.ssh' version '2.10.1'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.seoultech.lesson'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+bootJar{
+    archiveName = 'souffle_api.jar'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'mysql:mysql-connector-java'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testCompile group: 'com.h2database', name: 'h2', version: '1.4.199'
+    // Swagger API
+    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
+    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.9.2'
+    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-jpa
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '2.1.5.RELEASE'
+
+}
+
+ssh.settings {
+    knownHosts = allowAnyHosts
+}
+
+remotes {
+    serviceServer {
+        host = project.properties["serviceHost"]
+        user = project.properties["serviceUser"]
+        password = project.properties["servicePassword"]
+    }
+}
+
+task remoteDeploy {
+    doLast {
+        ssh.run {
+            session(remotes.serviceServer) {
+                //final warName = war.baseName + "-" + war.version + ".war"
+                execute "sudo systemctl stop souffle_api", ignoreError: true
+
+                final warName = war.baseName + "-" + version + ".war"
+                println "Service Server Deploy : ${warName}"
+
+                println "Deploy Start!"
+                execute "rm ${project.properties["servicePath"]}", ignoreError: true
+                put from: "build/libs/${warName}", into: project.properties["servicePath"]
+                execute "sudo systemctl start souffle_api"
+                println "Deploy Complete."
+            }
+        }
+    }
+}
