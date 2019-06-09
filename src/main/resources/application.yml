@@ -1,9 +1,6 @@
 spring:
-  datasource:
-    url: jdbc:mysql://35.194.37.76:3306/souffle
-    username: souffle
-    password: 1q2w3e
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  profiles:
+    active: prod
   jpa:
     hibernate:
       ddl-auto: validate # 운영시에는 validate 추천
